@@ -1,0 +1,1112 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport"
+		content="width=device-width,initial-scale=1.0, maximum-scale=1, minimum-scale=1, user-scalable=no" />
+	<title>猜诗词Plus</title>
+	<link rel="stylesheet" type="text/css" href="./css/element.css">
+	<link rel="stylesheet" type="text/css" href="./css/vxe.css">
+	<script src="./js/vue/vue.js"></script>
+	<script src="./js/vue/element.js"></script>
+	<script src="./js/filtered-poetry.js"></script>
+	<script src="./js/seedrandom.min.js"></script>
+
+	<link rel="stylesheet" href="./css/base.css">
+	<style>
+		.fixed-message {
+			position: fixed;
+			top: 20px;
+			left: 0;
+			right: 0;
+			background-color: rgba(0, 0, 0, 0.8);
+			/* 背景色 */
+			color: white;
+			/* 字体颜色 */
+			text-align: center;
+			/* 文本居中 */
+			padding: 10px;
+			/* 内边距 */
+			z-index: 1000;
+			/* 确保在顶部显示 */
+		}
+
+		body {
+			font-family: Arial, sans-serif;
+			text-align: left;
+			background-color: #ffffff;
+			/* 背景改为白色 */
+
+			margin-bottom: 300px;
+			height: fit-content !important;
+		}
+
+		body,
+		html {
+			height: 100%;
+			overflow: visible;
+
+		}
+
+		/* 针对手机端（宽度小于或等于 768px） */
+		@media (max-width: 768px) {
+			body {
+				padding: 5px;
+				margin: 0 10px;
+				height: fit-content;
+				padding-bottom: 100px;
+			}
+
+			.buttons>button {
+				margin: 5px;
+				font-size: 16px;
+			}
+
+			.buttons {
+				align-items: center;
+			}
+
+			.el-radio__label {
+				font-size: 16px;
+			}
+
+			.search-dialog {
+				display: flex;
+				flex-wrap: wrap;
+				align-items: center;
+			}
+
+		}
+
+		/* 针对电脑端（宽度大于 768px） */
+		@media (min-width: 769px) {
+			body {
+				padding: 20px;
+				margin: 0 25%;
+				padding-bottom: 100px;
+			}
+
+			.buttons {
+				align-items: center;
+
+			}
+
+			.buttons>button {
+				margin-top: 10px;
+			}
+
+		}
+
+		.dashed-line {
+			border-top: 1px dashed #ccc;
+			/* 虚线样式 */
+			margin: 11px 0;
+			/* 上下边距 */
+		}
+
+		.box-container {
+			display: flex;
+			flex-wrap: wrap;
+			width: 100%;
+			margin: 0;
+			border: 0px solid #ccc;
+			padding: 0px;
+			background: white;
+		}
+
+		.cantcopy {
+			user-select: none;
+			/* 禁止文本选择 */
+			pointer-events: none;
+			/* 禁止鼠标事件 */
+		}
+
+		.search-row {
+			cursor: pointer;
+			padding: 5px;
+			border-bottom: 1px dashed #ccc;
+		}
+
+		.search-row:hover {
+			background: #a9e2fc2d;
+		}
+
+		.box {
+			width: 20px;
+			height: 20px;
+			margin: 2px;
+			border: 1px solid #ccc;
+			text-align: center;
+			line-height: 20px;
+			font-size: 16px;
+		}
+
+		.unrevealed {
+			color: transparent;
+			background: #000;
+			/* 每个字的背景为黑色 */
+		}
+
+		.boxstyleunrevealed {
+			color: rgba(0, 0, 0, 0);
+			background: rgba(0, 0, 0, 0);
+			/* 每个字的背景为黑色 */
+		}
+
+		.boxstylerevealed {
+			color: white;
+			background: #006400;
+		}
+
+		.revealed {
+			color: white;
+			background: #006400;
+		}
+
+		.black {
+			color: #000
+		}
+
+		.green {
+			color: rgb(142, 204, 106);
+		}
+
+		.boxstyleauto {
+			color: black;
+			background: white;
+		}
+
+		.auto {
+			color: black !important;
+			background: white !important;
+		}
+
+		.blank {
+			color: rgba(0, 0, 0, 0);
+			background-color: rgba(0, 0, 0, 0);
+			border: 0px solid white;
+		}
+
+
+		.not-found {
+			color: red;
+			margin-top: 20px;
+		}
+
+		.wrong-guess {
+			display: flex;
+			flex-wrap: wrap;
+			width: 300px;
+			margin: 20px auto;
+			border: 1px solid red;
+			/* 红色边框 */
+			padding: 10px;
+			background: #f08080;
+			/* 红色背景 */
+		}
+
+		.wrong-guess-box .box {
+			background: #f08080;
+			/* 猜错字的背景为红色 */
+			color: white;
+			/* 字体颜色为白色 */
+
+		}
+
+		.el-tag+.el-tag {
+			margin-left: 10px;
+		}
+
+		.button-new-tag {
+			margin-left: 10px;
+			height: 32px;
+			line-height: 30px;
+			padding-top: 0;
+			padding-bottom: 0;
+		}
+
+		.input-new-tag {
+			width: 90px;
+			margin-left: 10px;
+			vertical-align: bottom;
+		}
+	</style>
+</head>
+
+<body>
+
+	<div id="app">
+		<div v-if="visible" class="fixed-message">
+			{{ message }}
+		</div>
+		<div style="display: flex;align-items: center;justify-content: space-between;">
+			<div style="display: flex;align-items: center;">
+				<h1 style="margin-bottom: 5px;margin-top: 5px;">猜诗词Plus</h1>
+				<div @click="copyURL" style="cursor: pointer;"><el-tag type="info"
+						v-if="currentPoetrySetting.poetryID!='' " effect="plain" size="mini"
+						style="margin-left: 10px;">{{currentPoetrySetting.poetryID}}</el-tag>
+				</div>
+
+			</div>
+
+			<el-tag type="success" v-if="currentPoetrySetting.isEveryDayMode" style="margin-right: 2px;">每日挑战</el-tag>
+			<el-tag v-if="!currentPoetrySetting.isEveryDayMode" style="margin-right: 2px;">随机模式</el-tag>
+		</div>
+
+		<!-- 按钮组 -->
+		<div style="display: flex;justify-content: start;margin-bottom: 16px;flex-wrap: wrap;" class="buttons">
+			<button @click="changeAnother">换一首</button>
+			<button @click="addTips" style="margin-left: 10px;">加点提示</button>
+
+			<button @click="showSingerSetting=!showSingerSetting;showSearchSong=false;" style="margin-left: 10px;">
+				选作者
+				<i class="el-icon-arrow-down" v-if="!showSingerSetting"></i>
+				<i class="el-icon-arrow-up" v-else></i>
+			</button>
+			<button @click="showSearchSong=!showSearchSong;showSingerSetting=false;" style="margin-left: 10px;">搜歌
+				<i class="el-icon-arrow-down" v-if="!showSearchSong"></i>
+				<i class="el-icon-arrow-up" v-else></i>
+			</button>
+
+			<button @click="clickEveryDay" style="margin-left: 10px;">每日挑战</button>
+
+			<div style="display: flex;align-items: center;margin-top: 10px;margin-left: 10px;">无敌版 <el-switch
+					v-model="vipVersion" active-color="#1484cb" inactive-color="grey" style="margin-left: 5px;">
+				</el-switch>
+				<button @click="showAnswer" v-if="vipVersion" style="margin-left: 10px;">显示答案</button>
+				<button @click="resetGuess" v-if="vipVersion" style="margin-left: 10px;">重置</button>
+			</div>
+		</div>
+		<!-- 歌手选择 -->
+		<div v-if="showSingerSetting">
+			<el-radio v-model="memorySetting.singerMode" label="all">我全都要！</el-radio>
+			<el-radio v-model="memorySetting.singerMode" label="diy">我自己选~ （可以自己加作者）</el-radio>
+			<div v-if="memorySetting.singerMode=='diy'" style="margin-top: 10px;">
+				<el-tag :key="tag" v-for="tag in memorySetting.dynamicTags" closable :disable-transitions="false"
+					@close="handleClose(tag)" style="margin: 5px;">
+					{{tag}}
+				</el-tag>
+				<el-input class="input-new-tag" v-if="inputVisible" v-model="inputValue" ref="saveTagInput" size="small"
+					@keyup.enter.native="handleInputConfirm" @blur="handleInputConfirm" style="margin: 5px;"
+					style="margin: 5px;">
+				</el-input>
+				<el-button v-else class="button-new-tag" size="small" @click="showInput" style="margin: 5px;">+ 新增
+				</el-button>
+			</div>
+
+			<!-- <div style="margin-top: 10px;">
+				<button @click="showSingerSetting=false">收起</button>
+			</div> -->
+			<div class="dashed-line"></div>
+		</div>
+		<!-- 搜歌 -->
+		<div v-if="showSearchSong" class="search-dialog">
+			<div style="display: flex;align-items: center;flex-wrap: nowrap;">ID　<el-input class="input-new-tag"
+					v-model="inputForID" size="small" style="margin: 5px;width: 25%;" clearable>
+				</el-input>
+				<el-button class="button-new-tag" size="small" @click="jumpBypoetryID(inputForID)"
+					style="margin: 5px;">切换</el-button>
+			</div>
+			<div style="display: flex;align-items: center;flex-wrap: nowrap;">作者 <el-input class="input-new-tag"
+					v-model="searchParam.singer" size="small" style="margin: 5px;width: 25%;" clearable>
+				</el-input>
+				作品名 <el-input class="input-new-tag" v-model="searchParam.song" size="small"
+					style="margin: 5px;width: 25%;" clearable>
+				</el-input>
+				<el-button class="button-new-tag" size="small" @click="searchSong" style="margin: 5px;">搜索</el-button>
+			</div>
+
+			<!-- 结果列表 -->
+			<div v-if="searchList.length>0">
+				<div v-for="(line, index) in searchList" :key="index" class="search-row" @click="switchSong(index)">
+					<div style="display: flex;">
+						<div>{{ line.name }} - {{ line.singer }}</div>
+					</div>
+					<div
+						style="overflow: hidden;white-space: nowrap;text-overflow: ellipsis;font-size: 14px;color: #767676;">
+						{{ line.concatLyric }}</div>
+
+				</div>
+				<div v-if="overLimit" style="color: #52976B;">还有...懒得显示了...</div>
+			</div>
+			<div v-else-if="cantSearch">查不到...！！！</div>
+
+		</div>
+
+		<!--主页  -->
+		<div style="position: sticky;top:0;background-color: white;padding-bottom: 15px;">
+			<div :class="{ black:!currentPoetrySetting.success,green: currentPoetrySetting.success}">
+				<strong>猜测次数：</strong><span>{{ currentPoetrySetting.guessCount }}</span>
+				<strong>提示次数：</strong><span>{{ currentPoetrySetting.tipCount }}</span>
+			</div>
+			<!-- 猜测输入框 -->
+			<div style="display: flex;width: 100%;justify-content: center;margin-top: 10px;">
+				<el-input v-model="inputLetter" ref="guessInput" maxlength="1" clearable placeholder="只输入一个字"
+					class="input-class" style="width: 90%;margin-right: 10px;" @change="guess">
+				</el-input>
+				<el-button @click.native.prevent="guess" @keyup.native.enter="guess" type="primary">猜！</el-button>
+			</div>
+			<div v-if="currentPoetrySetting.success&&!clickShowAnswer"
+				style="margin-top: 10px;display: flex;align-items: center;">
+				<div style="color:#8ecc6a;display: flex;align-items: center;"> 恭喜你猜对咯！</div>
+				<button @click="clickShare" style="
+			margin-left: 0px;
+			padding: 2px 8px;
+			font-size: 12px; 
+			background-color: #67C23A;
+			color: white; 
+			border: none;
+			border-radius: 4px; 
+			cursor: pointer;
+			display: inline-flex; 
+			align-items: center; 
+		  ">
+					分享
+					<i class="el-icon-share" style="margin-left: 4px;"></i>
+				</button>
+			</div>
+			<div v-if="wrongMessage" style="color:#f74f44;"> {{wrongMessage}}</div>
+			<div v-if="successMessage" style="color:#8ecc6a;"> {{successMessage}}</div>
+		</div>
+
+
+		<!--  作品名：-->
+		<!-- <h2 style="margin-bottom: 5px;margin-top: 0px;">名：</h2> -->
+		<div style="display: flex;align-items: center;justify-content: flex-start;">《
+			<div class="box-container"
+				:class="{ cantcopy:!currentPoetrySetting.success }">
+				<div class="box" v-for="(letter, index) in currentPoetrySetting.titleLetters" :key="index"
+					:class="{ blank:letter.blank,unrevealed:letter.blank?true:!letter.revealed,revealed: letter.blank?false:letter.revealed,auto:letter.revealed?false:letter.auto, }">
+					{{ letter.letter }}
+				</div>
+			</div>
+			》
+		</div>
+
+		<!--  作者：-->
+		<!-- <h2 style="margin-bottom: 5px;margin-top: 5px;">作者：</h2> -->
+		<div class="box-container" :class="{ cantcopy:!currentPoetrySetting.success }" style="margin-top: 5px;margin-bottom: 5px;">
+			<div class="box" v-for="(letter, index) in currentPoetrySetting.singerLetters" :key="index"
+				:class="{ blank:letter.blank,unrevealed:letter.blank?true:!letter.revealed,revealed: letter.blank?false:letter.revealed,auto:letter.revealed?false:letter.auto, }">
+				{{ letter.letter }}
+			</div>
+		</div>
+		<!-- 内容 -->
+		<!-- <h2 style="margin-bottom: 5px;margin-top: 5px;">诗词：</h2> -->
+		<div class="box-container" :class="{ cantcopy:!currentPoetrySetting.success }">
+			<div v-for="(line, index) in currentPoetrySetting.lyricLetters" :key="index"
+				style="display: flex;width: 100%;flex-wrap: wrap;flex-direction: row;">
+				<div v-for="(letter, idx) in line" :key="idx" class="box"
+					:class="{ blank:letter.blank,unrevealed:letter.blank?true:!letter.revealed,revealed: letter.blank?false:letter.revealed,auto:letter.revealed?false:letter.auto, }">
+					{{ letter.letter }}
+				</div>
+			</div>
+		</div>
+		<div class="wrong-guess-box" style="display: flex;flex-wrap: wrap;width: 100%;">
+			<div class="box" v-for="(guess, index) in currentPoetrySetting.wrongGuesses" :key="index">
+				{{ guess }}
+			</div>
+		</div>
+		<h6 style="margin-top: 20px;color: grey;">*仅供学习交流*</h6>
+		<!-- 成功弹框 -->
+		<el-dialog title="" :visible.sync="centerDialogVisible" width="200px" center>
+			<div>恭喜你猜对咯！！</div>
+			<div>一共只猜测了{{ currentPoetrySetting.guessCount }}次~~</div>
+			<div>( 提示{{ currentPoetrySetting.tipCount }}次 )</div>
+			<span slot="footer" class="dialog-footer">
+				<el-button @click="centerDialogVisible = false">关闭</el-button>
+				<el-button @click="clickShare">分享</el-button>
+			</span>
+		</el-dialog>
+	</div>
+
+	<script>
+		const lyricsArray = lyrics;
+		const lyricsArrayLength = lyricsArray.length;
+		new Vue({
+			el: '#app',
+			data: {
+				wrongMessage: '',
+				successMessage: '',
+				message: '',
+				visible: false,
+				clickShowAnswer: false,
+				loading: true,
+				vipVersion: false,
+				centerDialogVisible: false,
+				overLimit: false,
+				showSingerSetting: false,
+				showSearchSong: false,
+				inputVisible: false,
+				cantSearch: false,
+				inputLetter: '',
+				notFoundMessage: '',
+				quizInput: '',
+				inputValue: '',
+				inputForID: '',
+				searchParam: {
+					singer: '',
+					song: ''
+				},
+				searchList: [],
+				memorySetting: {
+					singerMode: 'all',
+					dynamicTags: ['李白', '苏轼'],
+				},
+				currentPoetrySetting: {
+					success: false,
+					titleLetters: [],
+					lyricLetters: [],
+					singerLetters: [],
+					wrongGuesses: [],
+					correctGuesses: [],
+					poetryID: '',
+					guessCount: 0,
+					tipCount: 0,
+					isEveryDayMode: false,
+				},
+				everyDayPoetrySetting: {
+					success: false,
+					guessCount: 0,
+					tipCount: 0,
+					titleLetters: [],
+					lyricLetters: [],
+					singerLetters: [],
+					wrongGuesses: [],
+					correctGuesses: [],
+					guessDate: 0,
+					poetryID: '',
+				}
+			},
+			watch: {
+				'memorySetting.singerMode': function (newValue, oldValue) {
+					// 处理 singerMode 变化的逻辑
+					this.saveMemorySetting()
+					// 你可以在这里添加其他逻辑，比如 API 调用或状态更新
+				}
+			},
+			mounted() {
+				let memorySetting = localStorage.getItem('guessPoetry');
+				let currentPoetrySetting = localStorage.getItem('currentPoetrySetting');
+				let everyDayPoetrySetting = localStorage.getItem('everyDayPoetrySetting');
+				if (memorySetting) {
+					this.memorySetting = JSON.parse(memorySetting);
+				}
+				if (currentPoetrySetting) {
+					this.currentPoetrySetting = JSON.parse(currentPoetrySetting);
+				}
+				//只获取今天存储的每日挑战数据
+				if (everyDayPoetrySetting && this.getCurrentDate() == JSON.parse(everyDayPoetrySetting).guessDate) {
+					this.everyDayPoetrySetting = JSON.parse(everyDayPoetrySetting);
+				} else {
+					this.everyDayPoetrySetting.guessDate = this.getCurrentDate()
+				}
+				const params = this.getQueryParams();
+				// console.log(params)
+				if (params?.poetryID) {
+					this.jumpBypoetryID(params?.poetryID);
+				}
+				//如果有缓存就获取缓存最近猜测的歌曲,如果缓存里显示猜测次数或提示次数大于0说明是猜了一半
+				else if (this.currentPoetrySetting.guessCount > 0 || this.currentPoetrySetting.tipCount > 0) {
+
+				}
+				//查看每日挑战做完了没
+				else if (!this.everyDayPoetrySetting.success) {
+					this.currentPoetrySetting.success = false;
+					this.currentPoetrySetting = JSON.parse(JSON.stringify(this.everyDayPoetrySetting));
+					this.clickEveryDay();
+				}
+				//做完了就随机开始
+				else {
+					this.currentPoetrySetting.isEveryDayMode = false;
+					this.setQuestion();
+				}
+				const _this = this;
+				window.addEventListener('scroll', this.handleScroll);
+				this.inputLetter = '';
+				setTimeout(() => {
+					_this.$refs.guessInput.focus()
+				}, 300)
+			},
+			beforeDestroy() {
+				window.removeEventListener('scroll', this.handleScroll);
+			},
+			methods: {
+				//禁止下拉刷新
+				handleScroll(event) {
+					if (window.scrollY === 0 && event.deltaY < 0) {
+						console.log('handleScroll')
+						event.preventDefault();
+					}
+				},
+				//用ID跳转
+				jumpBypoetryID(id) {
+					this.resetGuess();
+					id = id.toString().trim();
+					if (!id) return;
+					if (id.includes('S') || id.includes('s')) {
+						id = this.replaceCharacter(id, 'S');
+						id = this.replaceCharacter(id, 's');
+					}
+					id = Number(id);
+					let findObj = lyrics[id];
+					if (!findObj) return false;
+					//获取今日ID
+					let index = this.blackIndex();
+					this.currentPoetrySetting.isEveryDayMode = index == id ? true : false;
+					this.currentPoetrySetting.isEveryDayMode ? this.clickEveryDay() : this.setQuestion('custom', id);
+				},
+				//切歌
+				switchSong(index) {
+					this.currentPoetrySetting.titleLetters = [];
+					this.currentPoetrySetting.singerLetters = [];
+					this.currentPoetrySetting.lyricLetters = [];
+					this.currentPoetrySetting.poetryID = this.searchList[index].id;
+					this.convertQuestion(this.searchList[index]);
+					this.searchList = [];
+					this.searchParam = {
+						singer: '',
+						song: ''
+					};
+					this.showSearchSong = false;
+					this.showMessage('已切换~');
+					this.resetGuess();
+				},
+				//搜索歌曲
+				searchSong() {
+					const _this = this;
+					this.searchList = lyricsArray.filter(f => {
+						if (_this.searchParam.singer && f.singer.indexOf(_this.searchParam.singer) == -1)
+							return false;
+						if (_this.searchParam.song && f.name.indexOf(_this.searchParam.song) == -1)
+							return false;
+						return true;
+					});
+					if (this.searchList.length == 0) {
+						this.cantSearch = true;
+					} else {
+						this.cantSearch = false;
+					}
+					if (this.searchList.length > 9) {
+						this.overLimit = true;
+						this.searchList = this.searchList.slice(0, 9);
+
+					} else {
+						this.overLimit = false;
+					}
+					this.searchList.forEach(f => {
+						f.concatLyric = f.lyric.join(' ');
+					});
+				},
+				//存到本地记忆
+				saveMemorySetting() {
+					localStorage.setItem('guessPoetry', JSON.stringify(this.memorySetting));
+					localStorage.setItem('currentPoetrySetting', JSON.stringify(this.currentPoetrySetting));
+					if (this.currentPoetrySetting.isEveryDayMode) {
+						this.everyDayPoetrySetting = JSON.parse(JSON.stringify(this.currentPoetrySetting));
+						localStorage.setItem('everyDayPoetrySetting', JSON.stringify(this.everyDayPoetrySetting));
+					}
+				},
+				//删除标签
+				handleClose(tag) {
+					this.memorySetting.dynamicTags.splice(this.memorySetting.dynamicTags.indexOf(tag), 1);
+					this.saveMemorySetting();
+					this.changeAnother();
+				},
+				//显示标签新增输入框
+				showInput() {
+					this.inputVisible = true;
+					this.$nextTick(_ => {
+						this.$refs.saveTagInput.$refs.input.focus();
+					});
+				},
+				//确认添加歌手标签
+				handleInputConfirm() {
+					let inputValue = this.inputValue;
+					if (!inputValue) return;
+					if (this.memorySetting.dynamicTags.includes(inputValue)) {
+
+						this.showMessage(`"${inputValue}" 已经存在`);
+						// return;
+					} else if (lyricsArray.filter(f => f.singer == inputValue).length == 0) {
+
+						this.showMessage(`数据库里没有“${inputValue}”的歌...`);
+					} else {
+						this.memorySetting.dynamicTags.push(inputValue);
+						this.saveMemorySetting();
+					};
+					this.inputVisible = false;
+					this.inputValue = '';
+					this.changeAnother();
+				},
+				//题目格式转换
+				convertQuestion(question) {
+					const _this = this;
+					let title = this.cleanString(question.title).trim();
+					let singer = this.cleanString(question.writer).trim();
+					
+					let lyricDetail = question.content.filter(f => _this.cleanString(f, question.writer) != '');
+					//将歌名转换为数组
+					this.currentPoetrySetting.titleLetters = title.split('').map(char => ({
+						letter: char.toString(),
+						revealed: false,
+						auto: false,
+						blank: _this.isBlank(char.toString())
+					}));
+					//将歌手转换为数组
+					this.currentPoetrySetting.singerLetters = singer.split('').map(char => ({
+						letter: char.toString(),
+						revealed: false,
+						auto: false,
+						blank: _this.isBlank(char.toString())
+					}));
+					//将诗词转换为数组
+					let lys = [];
+					lyricDetail.forEach((line, index) => {
+						lys.push([]);
+						line = _this.cleanString(line);
+						lys[lys.length - 1] = line.split('').map(char => ({
+							letter: char.toString(),
+							revealed: false,
+							auto: false,
+							blank: _this.isBlank(char.toString())
+						}));
+					});
+					this.currentPoetrySetting.lyricLetters = lys;
+				},
+				//显示消息
+				showMessage(message) {
+					this.message = message;
+					this.visible = true;
+
+					// 3秒后自动隐藏消息
+					setTimeout(() => {
+						this.visible = false;
+					}, 1500);
+				},
+				//设置题目
+				setQuestion(type, index) {
+					const _this = this;
+					let question = {};
+					let randomIndex = 0;
+					//指定index
+					if (type = 'custom' && index) {
+						question = lyricsArray[index];
+						if (!question) this.changeAnother();
+					}
+					//随机
+					else {
+						if (this.memorySetting.singerMode == 'all') {
+							randomIndex = Math.floor(Math.random() * lyricsArrayLength);
+							question = lyricsArray[randomIndex];
+						} else {
+							//随机选择一个歌手
+							randomIndex = Math.floor(Math.random() * this.memorySetting.dynamicTags.length);
+							let searchList = lyricsArray.filter(f => f.singer == this.memorySetting.dynamicTags[
+								randomIndex]);
+							const randomIndex2 = Math.floor(Math.random() * searchList.length);
+							question = searchList[randomIndex2];
+						}
+					}
+					this.currentPoetrySetting.poetryID = question.id;
+					this.currentPoetrySetting.isEveryDayMode = this.currentPoetrySetting.poetryID == this.everyDayPoetrySetting.poetryID;
+					// 返回选择的问题
+					// console.log(question);
+					this.convertQuestion(question);
+				},
+				//换一首
+				changeAnother() {
+					this.currentPoetrySetting.isEveryDayMode = false;
+					this.setQuestion();
+					this.resetGuess();
+				},
+				//去除空格字母数字汉字之外的字符
+				cleanString(input, singer) {
+					if (!input) return '';
+					//去掉诗词里有歌手名字的行
+					if (singer && input.includes(singer)) return '';
+					// 使用正则表达式匹配需要保留的字符————保留中英文和数字和空格
+					input = input.replace(/[^,，。\s\u4e00-\u9fa5]/g, '');
+					//一些字和符号直接删掉
+					// input = this.replaceCharacters(input);
+					//校正异常空格
+					input = this.checkAndFixStringSpacing(input);
+					// 将连续三个及以上的空格替换为一个空格
+					input = input.replace(/\s{3,}/g, ' ');
+					// 去掉开头的所有空格
+					input = input.replace(/^\s+/, '');
+				
+
+					//去掉没用的行
+					if (
+						input.includes('编曲')
+						|| input.includes('作曲')
+						|| input.includes('作词')
+						|| input.includes('词 ')
+						|| input.includes('曲 ')
+						|| input.includes('词曲')
+						|| input.includes('制作人')
+						|| input.includes('改编')
+						|| input.includes('OP：')
+						|| input.includes('曲：')
+						|| input.includes('SP：')
+						|| input.includes('配唱制作')
+						|| input.includes('录音')
+						|| input.includes('编辑：')
+						|| input.includes('吉他：')
+						|| input.includes('吉他 ')
+						|| input.includes('出品')
+						|| input.includes('贝斯：')
+						|| input.includes('鼓：')
+						|| input.includes('监制')
+						|| input.includes('弦乐')
+						|| input.includes('编写')
+						|| input.includes('乐谱：')
+						|| input.includes('混音')
+						|| input.includes('母带')
+						|| input.includes('制作：')
+						|| input.includes('配唱')
+						|| input.includes('和音：')
+						|| input.includes('小号：')
+						|| input.includes('提琴：')
+						|| input.includes('Bass：')
+						|| input.includes('Vocal edite：')
+						|| input.includes('版权')
+					) return '';
+					input = this.replaceCharacter(input);
+					return input;
+				},
+				//复制链接
+				copyURL() {
+					navigator.clipboard.writeText(`https://yangzhiganlu1.github.io/guessPoetry?poetryID=${this.currentPoetrySetting.poetryID}`);
+					this.showMessage('链接已复制！')
+				},
+				///将输入字符替换成无
+				replaceCharacter(str, charToReplace) {
+					return str.replace(new RegExp(charToReplace, 'gi'), ''); // 使用正则表达式进行全局替换
+				},
+				//一些字和符号直接删掉
+				replaceCharacters(input) {
+					input = input.replace(/'/g, '');
+					input = this.replaceCharacter(input, 'Album');
+					input = this.replaceCharacter(input, 'Version');
+					input = this.replaceCharacter(input, '“');
+					input = this.replaceCharacter(input, '”');
+					input = this.replaceCharacter(input, '"');
+					input = this.replaceCharacter(input, '<');
+					input = this.replaceCharacter(input, '>');
+					input = this.replaceCharacter(input, '《');
+					input = this.replaceCharacter(input, '》');
+					return input;
+				},
+				//重置猜测状态
+				resetGuess() {
+					this.wrongMessage = '';
+					this.successMessage = '';
+					this.currentPoetrySetting.guessCount = 0;
+					this.currentPoetrySetting.tipCount = 0;
+					this.currentPoetrySetting.wrongGuesses = [];
+					this.currentPoetrySetting.correctGuesses = [];
+					this.notFoundMessage = '';
+					this.inputLetter = '';
+					this.currentPoetrySetting.success = false;
+					this.clickShowAnswer = false;
+					this.overLimit = false;
+					this.currentPoetrySetting.lyricLetters.forEach(line => line.forEach(letter => {
+						letter.revealed = false;
+						letter.auto = false;
+					})); // 清除已显示的诗词
+					this.currentPoetrySetting.titleLetters.forEach(letter => {
+						letter.revealed = false;
+						letter.auto = false;
+					}); // 清除已显示的歌名
+					this.currentPoetrySetting.singerLetters.forEach(letter => {
+						letter.revealed = false;
+						letter.auto = false;
+					}); // 清除已显示的歌手
+				},
+				//清空输入框
+				clearInput() {
+					const _this = this;
+					this.inputLetter = '';
+					// const inputElement = this.$refs.guessInput.$el.querySelector('input');
+					// console.log(inputElement);  // 获取输入框的值
+					this.$nextTick(() => {
+						const inputElement = this.$refs.guessInput.$el.querySelector('input');
+						console.log(inputElement);  // 检查是否获取到了 input 元素
+						inputElement.focus();  // 聚焦到输入框
+					});
+				},
+				//点击猜测按钮
+				guess(type) {
+					this.wrongMessage = '';
+					this.successMessage = '';
+					const guessValue = this.inputLetter.trim();
+					if (this.currentPoetrySetting.success) return;
+					if (!guessValue) return;
+					let lower = guessValue;
+					let upper = guessValue;
+					if (/^[a-zA-Z]+$/.test(guessValue)) {
+						lower = guessValue.toLowerCase();
+						upper = guessValue.toUpperCase();
+					}
+					// 如果猜测的是已经掀开的
+					if (this.currentPoetrySetting.correctGuesses.includes(guessValue)
+						|| this.currentPoetrySetting.correctGuesses.includes(lower) || this.currentPoetrySetting.correctGuesses.includes(upper)
+					) {
+						this.showMessage(`"${guessValue}"已猜过！在诗词中！`);
+						this.successMessage = `"${guessValue}"已猜过！在诗词中！`;
+						// 清空输入框
+						this.clearInput();
+						return;
+					}
+					if (this.currentPoetrySetting.wrongGuesses.includes(guessValue) || this.currentPoetrySetting.wrongGuesses.includes(lower) || this.currentPoetrySetting.wrongGuesses.includes(upper)) {
+						this.showMessage(`"${guessValue}"已猜过！不在诗词中！`);
+						this.wrongMessage = `"${guessValue}"已猜过！不在诗词中！`;
+						// 清空输入框
+						this.clearInput();
+						return;
+					}
+					// 增加猜测次数
+					if (type == 'tips') {
+						this.currentPoetrySetting.tipCount++;
+						if (this.currentPoetrySetting.isEveryDayMode)
+							this.currentPoetrySetting.everyDayTipCount++
+					}
+					else {
+						this.currentPoetrySetting.guessCount++;
+						if (this.currentPoetrySetting.isEveryDayMode)
+							this.currentPoetrySetting.everyDayGuessCount++;
+					}
+
+					let found = false;
+					this.currentPoetrySetting.titleLetters.forEach(letter => {
+						if (letter.letter === guessValue || letter.letter === lower || letter.letter === upper) {
+							letter.revealed = true;
+							found = true;
+						}
+					});
+					this.currentPoetrySetting.singerLetters.forEach(letter => {
+						if (letter.letter === guessValue || letter.letter === lower || letter.letter === upper) {
+							letter.revealed = true;
+							found = true;
+						}
+					});
+					this.currentPoetrySetting.lyricLetters.forEach(line => {
+						line.forEach(letter => {
+							if (letter.letter === guessValue || letter.letter === lower || letter.letter === upper) {
+								letter.revealed = true;
+								found = true;
+							}
+						});
+					});
+					if (!found) {
+						this.showMessage(`"${guessValue}" 不在诗词中`);
+						this.wrongMessage = `"${guessValue}" 不在诗词中`;
+						if (!this.currentPoetrySetting.wrongGuesses.includes(guessValue)) {
+							this.currentPoetrySetting.wrongGuesses.push(guessValue);
+						}
+					} else {
+						if (!this.currentPoetrySetting.correctGuesses.includes(guessValue)) {
+							this.currentPoetrySetting.correctGuesses.push(guessValue);
+						}
+						if (!this.checkCompleted()) {
+							this.successMessage = `"${guessValue}" 在诗词中!!`
+						};
+						this.wrongMessage = '';
+					}
+					// 清空输入框
+					this.clearInput();
+					//加缓存
+					this.saveMemorySetting()
+				},
+				//加点提示
+				addTips() {
+					const _this = this;
+					let string = '';
+					this.currentPoetrySetting.lyricLetters.forEach(
+						(line) => {
+							line.forEach(letter => {
+								if (!_this.isBlank(letter) && !letter.revealed) {
+									string += letter.letter;
+								}
+							})
+						}
+					);
+					if (string.length == 0) return;
+					const randomIndex = Math.floor(Math.random() * string.length);
+					this.inputLetter = string[randomIndex];
+					this.guess('tips');
+				},
+				//检查是否猜出歌名
+				checkCompleted() {
+					if (this.currentPoetrySetting.titleLetters.filter(f => !f.revealed && !this.isBlank(f.letter)).length == 0) {
+						this.centerDialogVisible = true;
+						this.currentPoetrySetting.success = true;
+						if (this.currentPoetrySetting.isEveryDayMode) {
+							this.everyDayPoetrySetting.success = true;
+							this.saveMemorySetting();
+
+						}
+
+						this.showAnswer('completed');
+						return true;
+					}
+					return false;
+				},
+				//解析URL
+				getQueryParams() {
+					const queryString = window.location.search; // 获取查询字符串
+					const params = {};
+
+					if (queryString) {
+						// 去掉开头的 "?"，然后按 "&" 分割
+						queryString
+							.substring(1) // 去掉 "?"
+							.split('&')   // 按 "&" 分割成键值对
+							.forEach((pair) => {
+								const [key, value] = pair.split('='); // 按 "=" 分割键和值
+								params[decodeURIComponent(key)] = decodeURIComponent(value || ''); // 解码并存储
+							});
+					}
+
+					return params;
+				},
+				//判定是否为空格
+				isBlank(char) {
+					// console.log(char, /^\s*$/.test(char));
+					return /^\s,，。*$/.test(char);
+				},
+				//检查空格是否异常
+				checkAndFixStringSpacing(str) {
+					// 如果字符串长度小于等于3，直接返回原字符串
+					if (str.length <= 3) {
+						return str;
+					}
+					//
+
+					// 检查是否是异常情况
+					let isAbnormal = true;
+					for (let i = 0; i < str.length - 1; i++) {
+						// 如果当前字符不是空格，且下一个字符不是空格，则属于正常
+						if (str[i] !== ' ' && str[i + 1] !== ' ') {
+							isAbnormal = false;
+							break;
+						}
+					}
+					// 如果是正常情况，直接返回原字符串
+					if (!isAbnormal) {
+						return str;
+					}
+					// 如果是异常情况，删除每个非空格字符后面的一个空格
+					let result = '';
+					for (let i = 0; i < str.length; i++) {
+						// 如果当前字符不是空格，且下一个字符是空格，则跳过下一个字符
+						if (str[i] !== ' ' && str[i + 1] === ' ') {
+							result += str[i];
+							i++; // 跳过下一个空格
+						} else {
+							result += str[i];
+						}
+					}
+					return result;
+				},
+				//显示答案
+				showAnswer(type) {
+					const _this = this;
+					this.wrongMessage = '';
+					this.clickShowAnswer = type == 'completed' ? false : true;
+					this.currentPoetrySetting.success = true;
+					//显示全部诗词
+					this.currentPoetrySetting.lyricLetters.forEach(
+						(line) => {
+							line.forEach(letter => {
+								if (!letter.revealed && !letter.blank) {
+									letter.auto = true;
+								}
+							})
+						}
+					);
+
+					this.currentPoetrySetting.titleLetters.forEach(letter => {
+						if (!letter.revealed && !letter.blank) {
+							letter.auto = true
+						}
+					}); // 显示全部歌名
+
+					this.currentPoetrySetting.singerLetters.forEach(letter => {
+						if (!letter.revealed && !letter.blank) {
+							letter.auto = true
+						}
+					}); // 显示全部歌手
+				},
+				//每日挑战
+				clickEveryDay() {
+					//获取今日ID
+					let index = this.blackIndex();
+					//如果是还没开始猜
+					if (this.everyDayPoetrySetting.guessCount == 0 && this.everyDayPoetrySetting.tipCount == 0) {
+						this.setQuestion('custom', index);
+					}
+					//已经开始猜了
+					else {
+						this.currentPoetrySetting = JSON.parse(JSON.stringify(this.everyDayPoetrySetting));
+					}
+					this.currentPoetrySetting.isEveryDayMode = true;
+				},
+				blackIndex() {
+					let index = this.getRandomIndex(lyricsArray, this.getCurrentDate());
+					switch (this.getCurrentDate()) {
+						case 20250210:
+							index = 10664;
+							break;
+						case 20250211:
+							index = 3509;
+						default:
+							break;
+					}
+					return index;
+				},
+				//分享战绩
+				clickShare() {
+					navigator.clipboard.writeText(`⭐猜诗词Plus⭐\n${this.currentPoetrySetting.isEveryDayMode ? '每日挑战成功！\n' : '随机挑战成功！\n'}猜测${this.currentPoetrySetting.guessCount}次 提示${this.currentPoetrySetting.tipCount}次\nhttps://yangzhiganlu1.github.io/guessPoetry?poetryID=${this.currentPoetrySetting.poetryID}`);
+					this.showMessage('已复制到剪贴板~')
+					this.centerDialogVisible = false;
+				},
+				//获取日期
+				getCurrentDate() {
+					const date = new Date();
+					const year = date.getFullYear();
+					const month = String(date.getMonth() + 1).padStart(2, '0'); // 月份从 0 开始
+					const day = String(date.getDate()).padStart(2, '0');
+					return Number(`${year}${month}${day}`); // 转换为数字
+				},
+				//获取每天随机索引
+				createSeededRandom(seed) {
+					let m = 0x80000000; // 2^31
+					let a = 1103515245;
+					let c = 12345;
+					let currentSeed = seed;
+
+					return function () {
+						currentSeed = (a * currentSeed + c) % m;
+						return currentSeed / m; // 返回 [0, 1) 之间的随机数
+					};
+				},
+				getRandomIndex(array, seed) {
+					if (array.length === 0) {
+						throw new Error("Array is empty.");
+					}
+					const rng = this.createSeededRandom(seed);
+					const randomValue = rng(); // 生成随机数
+					return Math.floor(randomValue * array.length); // 转换为数组索引
+				}
+
+			}
+		});
+	</script>
+
+</body>
+
+</html>
