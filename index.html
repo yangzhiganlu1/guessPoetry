@@ -148,6 +148,12 @@
 			/* 每个字的背景为黑色 */
 		}
 
+		.isquestion {
+			/* border: 2px solid #66d289; */
+			box-shadow: 1px 1px 5px rgb(105 187 55);
+			/* border-radius: 10%; */
+		}
+
 		.boxstyleunrevealed {
 			color: rgba(0, 0, 0, 0);
 			background: rgba(0, 0, 0, 0);
@@ -183,7 +189,7 @@
 		}
 
 		.blank {
-			color: rgba(0, 0, 0, 0);
+			color: rgb(0, 0, 0);
 			background-color: rgba(0, 0, 0, 0);
 			border: 0px solid white;
 		}
@@ -259,15 +265,12 @@
 			<button @click="changeAnother">换一首</button>
 			<button @click="addTips" style="margin-left: 10px;">加点提示</button>
 
-			<button @click="showSingerSetting=!showSingerSetting;showSearchSong=false;" style="margin-left: 10px;">
-				选作者
+			<button @click="showSingerSetting=!showSingerSetting;" style="margin-left: 10px;">
+				设置
 				<i class="el-icon-arrow-down" v-if="!showSingerSetting"></i>
 				<i class="el-icon-arrow-up" v-else></i>
 			</button>
-			<button @click="showSearchSong=!showSearchSong;showSingerSetting=false;" style="margin-left: 10px;">搜歌
-				<i class="el-icon-arrow-down" v-if="!showSearchSong"></i>
-				<i class="el-icon-arrow-up" v-else></i>
-			</button>
+
 
 			<button @click="clickEveryDay" style="margin-left: 10px;">每日挑战</button>
 
@@ -280,45 +283,56 @@
 		</div>
 		<!-- 歌手选择 -->
 		<div v-if="showSingerSetting">
-			<el-radio v-model="memorySetting.singerMode" label="all">我全都要！</el-radio>
-			<el-radio v-model="memorySetting.singerMode" label="diy">我自己选~ （可以自己加作者）</el-radio>
-			<div v-if="memorySetting.singerMode=='diy'" style="margin-top: 10px;">
-				<el-tag :key="tag" v-for="tag in memorySetting.dynamicTags" closable :disable-transitions="false"
-					@close="handleClose(tag)" style="margin: 5px;">
-					{{tag}}
-				</el-tag>
-				<el-input class="input-new-tag" v-if="inputVisible" v-model="inputValue" ref="saveTagInput" size="small"
-					@keyup.enter.native="handleInputConfirm" @blur="handleInputConfirm" style="margin: 5px;"
-					style="margin: 5px;">
-				</el-input>
-				<el-button v-else class="button-new-tag" size="small" @click="showInput" style="margin: 5px;">+ 新增
-				</el-button>
+			<div>
+				<div style="display: flex;align-items: center;">
+					<div style="padding-bottom: 5px;">作者范围：</div>
+					<el-radio v-model="memorySetting.singerMode" label="all">我全都要！</el-radio>
+					<el-radio v-model="memorySetting.singerMode" label="diy">我自己选~ </el-radio>
+				</div>
+				<div v-if="memorySetting.singerMode=='diy'" style="margin-top: 10px;">
+					<el-tag :key="tag" v-for="tag in memorySetting.dynamicTags" closable :disable-transitions="false"
+						@close="handleClose(tag)" style="margin: 5px;">
+						{{tag}}
+					</el-tag>
+					<el-input class="input-new-tag" v-if="inputVisible" v-model="inputValue" ref="saveTagInput"
+						size="small" @keyup.enter.native="handleInputConfirm" @blur="handleInputConfirm"
+						style="margin: 5px;" style="margin: 5px;">
+					</el-input>
+					<el-button v-else class="button-new-tag" size="small" @click="showInput" style="margin: 5px;">+ 新增
+					</el-button>
+				</div>
 			</div>
-
 			<!-- <div style="margin-top: 10px;">
-				<button @click="showSingerSetting=false">收起</button>
-			</div> -->
+					<button @click="showSingerSetting=false">收起</button>
+				</div> -->
 			<div class="dashed-line"></div>
-		</div>
-		<!-- 搜歌 -->
-		<div v-if="showSearchSong" class="search-dialog">
-			<div style="display: flex;align-items: center;flex-wrap: nowrap;">ID　<el-input class="input-new-tag"
-					v-model="inputForID" size="small" style="margin: 5px;width: 25%;" clearable>
-				</el-input>
-				<el-button class="button-new-tag" size="small" @click="jumpBypoetryID(inputForID)"
-					style="margin: 5px;">切换</el-button>
+			<div style="display: flex;align-items: center;">简单模式
+
+				<el-switch v-model="memorySetting.easyMode" active-color="#1484cb" @change="easyChange"
+					inactive-color="grey" style="margin-left: 5px;">
+				</el-switch>
+
+				<el-slider @change="sliderChange" :disabled="!memorySetting.easyMode" v-model="memorySetting.easyFactor"
+					:min="10" :max="100" style="width: 60%;margin-left: 20px;">
 			</div>
-			<div style="display: flex;align-items: center;flex-wrap: nowrap;">作者 <el-input class="input-new-tag"
+			<div class="dashed-line"></div>
+			<!-- <div style="display: flex;align-items: center;flex-wrap: nowrap;">ID　<el-input class="input-new-tag"
+						v-model="inputForID" size="small" style="margin: 5px;width: 25%;" clearable>
+					</el-input>
+					<el-button class="button-new-tag" size="small" @click="jumpBySongID(inputForID)"
+						style="margin: 5px;">切换</el-button>
+				</div> -->
+			<!-- <div style="display: flex;align-items: center;flex-wrap: nowrap;">歌手 <el-input class="input-new-tag"
 					v-model="searchParam.singer" size="small" style="margin: 5px;width: 25%;" clearable>
 				</el-input>
-				作品名 <el-input class="input-new-tag" v-model="searchParam.song" size="small"
+				歌名 <el-input class="input-new-tag" v-model="searchParam.song" size="small"
 					style="margin: 5px;width: 25%;" clearable>
 				</el-input>
 				<el-button class="button-new-tag" size="small" @click="searchSong" style="margin: 5px;">搜索</el-button>
-			</div>
+			</div> -->
 
 			<!-- 结果列表 -->
-			<div v-if="searchList.length>0">
+			<!-- <div v-if="searchList.length>0">
 				<div v-for="(line, index) in searchList" :key="index" class="search-row" @click="switchSong(index)">
 					<div style="display: flex;">
 						<div>{{ line.name }} - {{ line.singer }}</div>
@@ -330,8 +344,10 @@
 				</div>
 				<div v-if="overLimit" style="color: #52976B;">还有...懒得显示了...</div>
 			</div>
-			<div v-else-if="cantSearch">查不到...！！！</div>
+			<div v-else-if="cantSearch">查不到...！！！</div> -->
 
+
+			<div class="dashed-line"></div>
 		</div>
 
 		<!--主页  -->
@@ -374,8 +390,8 @@
 		<!--  作品名：-->
 		<!-- <h2 style="margin-bottom: 5px;margin-top: 0px;">名：</h2> -->
 		<div style="display: flex;align-items: center;justify-content: flex-start;">《
-			<div class="box-container"
-				:class="{ cantcopy:!currentPoetrySetting.success }">
+			<div class="box-container" :class="{ cantcopy:!currentPoetrySetting.success }"
+				style="width: fit-content !important;">
 				<div class="box" v-for="(letter, index) in currentPoetrySetting.titleLetters" :key="index"
 					:class="{ blank:letter.blank,unrevealed:letter.blank?true:!letter.revealed,revealed: letter.blank?false:letter.revealed,auto:letter.revealed?false:letter.auto, }">
 					{{ letter.letter }}
@@ -386,7 +402,8 @@
 
 		<!--  作者：-->
 		<!-- <h2 style="margin-bottom: 5px;margin-top: 5px;">作者：</h2> -->
-		<div class="box-container" :class="{ cantcopy:!currentPoetrySetting.success }" style="margin-top: 5px;margin-bottom: 5px;">
+		<div class="box-container" :class="{ cantcopy:!currentPoetrySetting.success }"
+			style="margin-top: 15px;margin-bottom: 15px;">
 			<div class="box" v-for="(letter, index) in currentPoetrySetting.singerLetters" :key="index"
 				:class="{ blank:letter.blank,unrevealed:letter.blank?true:!letter.revealed,revealed: letter.blank?false:letter.revealed,auto:letter.revealed?false:letter.auto, }">
 				{{ letter.letter }}
@@ -398,7 +415,7 @@
 			<div v-for="(line, index) in currentPoetrySetting.lyricLetters" :key="index"
 				style="display: flex;width: 100%;flex-wrap: wrap;flex-direction: row;">
 				<div v-for="(letter, idx) in line" :key="idx" class="box"
-					:class="{ blank:letter.blank,unrevealed:letter.blank?true:!letter.revealed,revealed: letter.blank?false:letter.revealed,auto:letter.revealed?false:letter.auto, }">
+					:class="{ blank:letter.blank,unrevealed:letter.blank?true:!letter.revealed,revealed: letter.blank?false:letter.revealed,auto:letter.revealed?false:letter.auto,isquestion:letter.isquestion?true:false }">
 					{{ letter.letter }}
 				</div>
 			</div>
@@ -437,7 +454,6 @@
 				centerDialogVisible: false,
 				overLimit: false,
 				showSingerSetting: false,
-				showSearchSong: false,
 				inputVisible: false,
 				cantSearch: false,
 				inputLetter: '',
@@ -453,6 +469,8 @@
 				memorySetting: {
 					singerMode: 'all',
 					dynamicTags: ['李白', '苏轼'],
+					easyMode: false,
+					easyFactor: 30
 				},
 				currentPoetrySetting: {
 					success: false,
@@ -500,7 +518,8 @@
 				if (everyDayPoetrySetting && this.getCurrentDate() == JSON.parse(everyDayPoetrySetting).guessDate) {
 					this.everyDayPoetrySetting = JSON.parse(everyDayPoetrySetting);
 				} else {
-					this.everyDayPoetrySetting.guessDate = this.getCurrentDate()
+					this.everyDayPoetrySetting.guessDate = this.getCurrentDate();
+					this.resetGuess();
 				}
 				const params = this.getQueryParams();
 				// console.log(params)
@@ -533,6 +552,88 @@
 				window.removeEventListener('scroll', this.handleScroll);
 			},
 			methods: {
+				sliderChange(value) {
+					// console.log(value)
+					if (value) {
+						this.resetGuess()
+						this.showHalfAnswer()
+					}
+				},
+				//简单模式开关
+				easyChange(value) {
+
+					if (value) this.showHalfAnswer()
+					else {
+						this.resetGuess()
+					}
+				},
+				//显示一半答案
+				showHalfAnswer() {
+					const _this = this;
+					this.wrongMessage = '';
+					let string = '';
+					this.currentPoetrySetting.lyricLetters.forEach(
+						(line) => {
+							line.forEach(letter => {
+								if (!_this.isBlank(letter) && !letter.revealed && !string.includes(letter.letter)) {
+									string += letter.letter;
+								}
+							})
+						}
+					);
+					// 将字符串转换为数组
+					let letterArray = string.split('');
+					// Fisher-Yates 洗牌算法
+					for (let i = letterArray.length - 1; i > 0; i--) {
+						const j = Math.floor(Math.random() * (i + 1));
+						[letterArray[i], letterArray[j]] = [letterArray[j], letterArray[i]]; // 交换
+					}
+					// 将打乱后的字符数组重新转换为字符串
+					string = letterArray.join('');
+					// 计算字符串长度并取前一半
+					const halfLength = Math.floor(string.length * Number(this.memorySetting.easyFactor) / 100);
+					string = string.substring(0, halfLength);
+					this.currentPoetrySetting.titleLetters.forEach(f => {
+						string = this.replaceCharacter(string, f.letter);
+					})
+					string = string.split('');
+					string.forEach(guessValue => {
+						let lower = guessValue;
+						let upper = guessValue;
+						if (/^[a-zA-Z]+$/.test(guessValue)) {
+							lower = guessValue.toLowerCase();
+							upper = guessValue.toUpperCase();
+						}
+						this.currentPoetrySetting.titleLetters.forEach(letter => {
+							if (letter.letter === guessValue || letter.letter === lower || letter.letter === upper) {
+								if (!letter.revealed && !letter.blank) {
+									letter.auto = true;
+								}
+							}
+						});
+						this.currentPoetrySetting.singerLetters.forEach(letter => {
+							if (letter.letter === guessValue || letter.letter === lower || letter.letter === upper) {
+								if (!letter.revealed && !letter.blank) {
+									letter.auto = true;
+								}
+							}
+						});
+						this.currentPoetrySetting.lyricLetters.forEach(line => {
+							line.forEach(letter => {
+								if (letter.letter === guessValue || letter.letter === lower || letter.letter === upper) {
+									if (!letter.revealed && !letter.blank) {
+										letter.auto = true;
+									}
+								}
+							});
+						});
+					})
+					// 清空输入框
+					this.clearInput();
+					//加缓存
+					this.saveMemorySetting()
+				},
+
 				//禁止下拉刷新
 				handleScroll(event) {
 					if (window.scrollY === 0 && event.deltaY < 0) {
@@ -545,9 +646,9 @@
 					this.resetGuess();
 					id = id.toString().trim();
 					if (!id) return;
-					if (id.includes('S') || id.includes('s')) {
-						id = this.replaceCharacter(id, 'S');
-						id = this.replaceCharacter(id, 's');
+					if (id.includes('P') || id.includes('p')) {
+						id = this.replaceCharacter(id, 'P');
+						id = this.replaceCharacter(id, 'P');
 					}
 					id = Number(id);
 					let findObj = lyrics[id];
@@ -569,7 +670,6 @@
 						singer: '',
 						song: ''
 					};
-					this.showSearchSong = false;
 					this.showMessage('已切换~');
 					this.resetGuess();
 				},
@@ -631,7 +731,7 @@
 						// return;
 					} else if (lyricsArray.filter(f => f.singer == inputValue).length == 0) {
 
-						this.showMessage(`数据库里没有“${inputValue}”的歌...`);
+						this.showMessage(`库里没有“${inputValue}”的诗词...`);
 					} else {
 						this.memorySetting.dynamicTags.push(inputValue);
 						this.saveMemorySetting();
@@ -645,8 +745,11 @@
 					const _this = this;
 					let title = this.cleanString(question.title).trim();
 					let singer = this.cleanString(question.writer).trim();
-					
-					let lyricDetail = question.content.filter(f => _this.cleanString(f, question.writer) != '');
+					if (question.dynasty) {
+						question.dynasty = this.replaceCharacter(question.dynasty, '代');
+						singer = `[${question.dynasty}] ${singer}`;
+					}
+					let lyricDetail = question.content
 					//将歌名转换为数组
 					this.currentPoetrySetting.titleLetters = title.split('').map(char => ({
 						letter: char.toString(),
@@ -665,12 +768,15 @@
 					let lys = [];
 					lyricDetail.forEach((line, index) => {
 						lys.push([]);
+						let keysentence = line.includes('keysentence') ? true : false
+						if (keysentence) line = this.replaceCharacter(line, 'keysentence')
 						line = _this.cleanString(line);
 						lys[lys.length - 1] = line.split('').map(char => ({
 							letter: char.toString(),
 							revealed: false,
 							auto: false,
-							blank: _this.isBlank(char.toString())
+							blank: _this.isBlank(char.toString()),
+							isquestion: keysentence && !_this.isBlank(char.toString())
 						}));
 					});
 					this.currentPoetrySetting.lyricLetters = lys;
@@ -703,7 +809,7 @@
 						} else {
 							//随机选择一个歌手
 							randomIndex = Math.floor(Math.random() * this.memorySetting.dynamicTags.length);
-							let searchList = lyricsArray.filter(f => f.singer == this.memorySetting.dynamicTags[
+							let searchList = lyricsArray.filter(f => f.writer == this.memorySetting.dynamicTags[
 								randomIndex]);
 							const randomIndex2 = Math.floor(Math.random() * searchList.length);
 							question = searchList[randomIndex2];
@@ -720,6 +826,7 @@
 					this.currentPoetrySetting.isEveryDayMode = false;
 					this.setQuestion();
 					this.resetGuess();
+					if (this.memorySetting.easyMode) this.showHalfAnswer();
 				},
 				//去除空格字母数字汉字之外的字符
 				cleanString(input, singer) {
@@ -727,7 +834,7 @@
 					//去掉诗词里有歌手名字的行
 					if (singer && input.includes(singer)) return '';
 					// 使用正则表达式匹配需要保留的字符————保留中英文和数字和空格
-					input = input.replace(/[^,，。\s\u4e00-\u9fa5]/g, '');
+					input = input.replace(/[^,，。·\sa-zA-Z\u4e00-\u9fa5]/g, '');
 					//一些字和符号直接删掉
 					// input = this.replaceCharacters(input);
 					//校正异常空格
@@ -736,44 +843,6 @@
 					input = input.replace(/\s{3,}/g, ' ');
 					// 去掉开头的所有空格
 					input = input.replace(/^\s+/, '');
-				
-
-					//去掉没用的行
-					if (
-						input.includes('编曲')
-						|| input.includes('作曲')
-						|| input.includes('作词')
-						|| input.includes('词 ')
-						|| input.includes('曲 ')
-						|| input.includes('词曲')
-						|| input.includes('制作人')
-						|| input.includes('改编')
-						|| input.includes('OP：')
-						|| input.includes('曲：')
-						|| input.includes('SP：')
-						|| input.includes('配唱制作')
-						|| input.includes('录音')
-						|| input.includes('编辑：')
-						|| input.includes('吉他：')
-						|| input.includes('吉他 ')
-						|| input.includes('出品')
-						|| input.includes('贝斯：')
-						|| input.includes('鼓：')
-						|| input.includes('监制')
-						|| input.includes('弦乐')
-						|| input.includes('编写')
-						|| input.includes('乐谱：')
-						|| input.includes('混音')
-						|| input.includes('母带')
-						|| input.includes('制作：')
-						|| input.includes('配唱')
-						|| input.includes('和音：')
-						|| input.includes('小号：')
-						|| input.includes('提琴：')
-						|| input.includes('Bass：')
-						|| input.includes('Vocal edite：')
-						|| input.includes('版权')
-					) return '';
 					input = this.replaceCharacter(input);
 					return input;
 				},
@@ -789,8 +858,6 @@
 				//一些字和符号直接删掉
 				replaceCharacters(input) {
 					input = input.replace(/'/g, '');
-					input = this.replaceCharacter(input, 'Album');
-					input = this.replaceCharacter(input, 'Version');
 					input = this.replaceCharacter(input, '“');
 					input = this.replaceCharacter(input, '”');
 					input = this.replaceCharacter(input, '"');
@@ -825,6 +892,7 @@
 						letter.revealed = false;
 						letter.auto = false;
 					}); // 清除已显示的歌手
+					if (this.memorySetting.easyMode) this.showHalfAnswer()
 				},
 				//清空输入框
 				clearInput() {
@@ -939,17 +1007,17 @@
 					this.inputLetter = string[randomIndex];
 					this.guess('tips');
 				},
-				//检查是否猜出歌名
+				//检查是否猜出名句
 				checkCompleted() {
-					if (this.currentPoetrySetting.titleLetters.filter(f => !f.revealed && !this.isBlank(f.letter)).length == 0) {
+					let iscomp = true
+					this.currentPoetrySetting.lyricLetters.forEach(line => line.forEach(f => { if (f.isquestion == true && !f.revealed && !f.blank) iscomp = false }))
+					if (iscomp) {
 						this.centerDialogVisible = true;
 						this.currentPoetrySetting.success = true;
 						if (this.currentPoetrySetting.isEveryDayMode) {
 							this.everyDayPoetrySetting.success = true;
 							this.saveMemorySetting();
-
 						}
-
 						this.showAnswer('completed');
 						return true;
 					}
@@ -973,10 +1041,10 @@
 
 					return params;
 				},
-				//判定是否为空格
+				// 判定是否为空格
 				isBlank(char) {
-					// console.log(char, /^\s*$/.test(char));
-					return /^\s,，。*$/.test(char);
+					// 检查字符是否为白空格或特定的中文标点，包括方括号
+					return /^\s*$|^[，。,.·“”\[\]]$/.test(char);
 				},
 				//检查空格是否异常
 				checkAndFixStringSpacing(str) {
@@ -1053,6 +1121,7 @@
 					else {
 						this.currentPoetrySetting = JSON.parse(JSON.stringify(this.everyDayPoetrySetting));
 					}
+					if (this.memorySetting.easyMode) this.showHalfAnswer()
 					this.currentPoetrySetting.isEveryDayMode = true;
 				},
 				blackIndex() {
@@ -1061,8 +1130,8 @@
 						case 20250210:
 							index = 10664;
 							break;
-						case 20250211:
-							index = 3509;
+						case 20250216:
+							index = 4;
 						default:
 							break;
 					}
