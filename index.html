@@ -305,8 +305,8 @@
 			<!-- <div style="margin-top: 10px;">
 					<button @click="showSingerSetting=false">收起</button>
 				</div> -->
-			<div class="dashed-line"></div>
-			<div style="display: flex;align-items: center;">简单模式
+			<!-- <div class="dashed-line"></div> -->
+			<!-- <div style="display: flex;align-items: center;">简单模式
 
 				<el-switch v-model="memorySetting.easyMode" active-color="#1484cb" @change="easyChange"
 					inactive-color="grey" style="margin-left: 5px;">
@@ -314,8 +314,8 @@
 
 				<el-slider @change="sliderChange" :disabled="!memorySetting.easyMode" v-model="memorySetting.easyFactor"
 					:min="10" :max="100" style="width: 60%;margin-left: 20px;">
-			</div>
-			<div class="dashed-line"></div>
+			</div> -->
+			<!-- <div class="dashed-line"></div> -->
 			<!-- <div style="display: flex;align-items: center;flex-wrap: nowrap;">ID　<el-input class="input-new-tag"
 						v-model="inputForID" size="small" style="margin: 5px;width: 25%;" clearable>
 					</el-input>
@@ -1127,11 +1127,10 @@
 				blackIndex() {
 					let index = this.getRandomIndex(lyricsArray, this.getCurrentDate());
 					switch (this.getCurrentDate()) {
-						case 20250210:
-							index = 10664;
+						case 20250217:
+							index = 149;
 							break;
-						case 20250216:
-							index = 4;
+						
 						default:
 							break;
 					}
